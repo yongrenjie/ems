@@ -1,10 +1,7 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
-
 module Main where
 
 
+import           Control.Exception              ( handle )
 import qualified Data.ByteString               as B
 import           Data.ByteString                ( ByteString )
 import           Data.List                      ( sortOn )
@@ -15,8 +12,10 @@ import qualified Data.Text.IO                  as TIO
 import           GetEggMoves
 import           Network.HTTP.Req
 import           Options
-import           Control.Exception              ( handle )
-import           System.IO                      ( stderr, hPutStrLn )
+import           Print
+import           System.IO                      ( hPutStrLn
+                                                , stderr
+                                                )
 
 
 -- too lazy for ExceptT
@@ -40,6 +39,4 @@ main = do
   eitherHtml <- getSerebiiHTML (game opts) (pokemon opts)
   case eitherHtml of
        Left error -> TIO.hPutStrLn stderr error
-       Right html -> do
-         let ems = sortOn move $ getEm (game opts) html
-         mapM_ printEm ems
+       Right html -> printEms $ getEm (game opts) html

@@ -1,9 +1,6 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module GetEggMoves
   ( getEm
   , printEm
-  , EggMove(..)
   ) where
 
 
@@ -15,33 +12,9 @@ import qualified Data.Text                     as T
 import qualified Data.Text.Encoding            as T
 import qualified Data.Text.IO                  as TIO
 import           Options                        ( Game(..) )
+import           Print
 import           Text.HTML.TagSoup
-
-import Debug.Trace
-
-newtype Pokemon = Pokemon Text deriving (Eq, Ord, Show)
-
-unPokemon :: Pokemon -> Text
-unPokemon (Pokemon t) = t
-
-
-data EggMove = EggMove {
-  move :: Text,            -- the name of the move
-  levelParents :: [Pokemon],  -- parents which learn through levelling up
-  breedParents :: [Pokemon],  -- parents which learn through breeding
-  tags :: [Tag ByteString] -- debug
-} deriving (Eq, Show)
-
-
-printEm :: EggMove -> IO ()
-printEm em = do
-  -- TIO.putStrLn "\n\n\n\n"
-  TIO.putStrLn (move em)
-  let spaces = T.replicate 4 " "
-  TIO.putStrLn
-    (spaces <> "Level up: " <> (T.intercalate ", " . map unPokemon $ levelParents em))
-  TIO.putStrLn (spaces <> "Breed: " <> (T.intercalate ", " . map unPokemon $ breedParents em))
-  -- print $ tags em
+import           Types
 
 
 getEm :: Game -> ByteString -> [EggMove]
