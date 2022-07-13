@@ -1,49 +1,45 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
 module Main where
 
+
 import qualified Data.ByteString               as B
-import           Data.ByteString               (ByteString)
-import           Data.Char
+import           Data.ByteString                ( ByteString )
+import           Data.List                      ( sortOn )
 import           Data.Text                      ( Text )
 import qualified Data.Text                     as T
 import qualified Data.Text.Encoding            as T
 import qualified Data.Text.IO                  as TIO
-import           Network.HTTP.Req
-import           Options.Applicative
-import Data.List (sort)
-
 import           GetEggMoves
+import           Network.HTTP.Req
+import           Options
+import           Control.Exception              ( handle )
+import           System.IO                      ( stderr, hPutStrLn )
 
 
-getSerebiiHTML :: Text -> IO ByteString
-getSerebiiHTML pkmn = runReq defaultHttpConfig $ do
-  r <- req GET
-           (https "serebii.net" /: "pokedex-swsh" /: pkmn /: "egg.shtml")
-           NoReqBody
-           bsResponse
-           mempty
-  pure $ responseBody r
+-- too lazy for ExceptT
+getSerebiiHTML :: Game -> Text -> IO (Either Text ByteString)
+getSerebiiHTML game pkmn =  do
+  let serebiiUrl = https "serebii.net" /: "pokedex-swsh" /: pkmn /: "egg.shtml"
+  let err = \(e :: HttpException) -> pure (Left $ "could not access URL: " <> renderUrl serebiiUrl)
+  handle err $ do
+    r <- runReq defaultHttpConfig (req GET serebiiUrl NoReqBody bsResponse mempty)
+    pure $ Right (responseBody r)
 
+
+-- IO BS >>= BS -> Eitehr Text BS ===  IO (Either Text BS)
+
+-- runReq defaultHttpConfig :: Req BS -> IO BS
+-- catch :: IO a -> (e -> IO a) -> IO a
 
 main :: IO ()
 main = do
-  opts <- execParser options
-  html <- getSerebiiHTML (name opts)
-  let ems = sort $ getEggMoves html
-  mapM_ TIO.putStrLn ems
-
-
--- Command-line option parsing
-
-data Options = Options
-  { name :: Text
-  }
-
-options :: ParserInfo Options
-options = info (parseArgv <**> helper)
-               (fullDesc <> progDesc "Get egg moves for a Pokemon")
-
-parseArgv :: Parser Options
-parseArgv = Options <$> argument str (metavar "POKEMON")
+  opts <- getOptions
+  eitherHtml <- getSerebiiHTML (game opts) (pokemon opts)
+  case eitherHtml of
+       Left error -> TIO.hPutStrLn stderr error
+       Right html -> do
+         let ems = sortOn move $ getEm (game opts) html
+         mapM_ printEm ems
