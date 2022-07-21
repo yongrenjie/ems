@@ -1,6 +1,5 @@
 module Print
-  ( printEm
-  , printEms
+  ( printEms
   ) where
 
 
@@ -8,24 +7,29 @@ import           Data.List                      ( sortOn )
 import qualified Data.Text                     as T
 import           Data.Text                      ( Text )
 import qualified Data.Text.IO                  as TIO
+import           Prettyprinter
+import           Prettyprinter.Render.Terminal  ( AnsiStyle(..)
+                                                , bold
+                                                , putDoc
+                                                )
+import           Prettyprinter.Util             ( putDocW
+                                                , reflow
+                                                )
 import           Types
 
 
-printEm :: EggMove -> IO ()
-printEm em = do
-  TIO.putStrLn (move em)
-  let spaces = T.replicate 4 " "
-  TIO.putStrLn
-    (  spaces
-    <> "Level up: "
-    <> (T.intercalate ", " . map unPokemon $ levelParents em)
-    )
-  TIO.putStrLn
-    (  spaces
-    <> "Breed: "
-    <> (T.intercalate ", " . map unPokemon $ breedParents em)
-    )
+makeDoc :: EggMove -> Doc AnsiStyle
+makeDoc em = vsep [moveD, indent 4 parentsD]
+ where
+  makeCommaSeparatedText :: [Pokemon] -> Text
+  makeCommaSeparatedText = T.intercalate ", " . map unPokemon
+  moveD                  = annotate bold $ pretty (move em)
+  levelParentsD =
+    "Level :" <+> indent 0 (reflow . makeCommaSeparatedText $ levelParents em)
+  breedParentsD =
+    "Breed :" <+> indent 0 (reflow . makeCommaSeparatedText $ breedParents em)
+  parentsD = vsep [levelParentsD, breedParentsD, hardline]
 
 
 printEms :: [EggMove] -> IO ()
-printEms ems = mapM_ printEm $ sortOn move ems
+printEms = putDoc . vsep . map makeDoc

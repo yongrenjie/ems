@@ -1,12 +1,12 @@
-module GetEggMoves
-  ( getEm
-  , printEm
+module GetEggMoves ( getEm
   ) where
 
 
 import qualified Data.ByteString               as BS
 import           Data.ByteString                ( ByteString )
-import           Data.List                      ( nub )
+import           Data.List                      ( nub
+                                                , sort
+                                                )
 import           Data.Text                      ( Text )
 import qualified Data.Text                     as T
 import qualified Data.Text.Encoding            as T
@@ -19,7 +19,8 @@ import           Types
 
 getEm :: Game -> ByteString -> [EggMove]
 getEm game =
-  map (extractEm game)
+  sort
+    . map (extractEm game)
     . filter (isAvailableIn game)
     . partitions isAttackDexLink
     . takeWhile (~/= ("</main>" :: String))
@@ -82,7 +83,7 @@ extractBreedParents game ts1 = pkmns
 
 
 getPokemonFromImageTag :: Tag ByteString -> Pokemon
-getPokemonFromImageTag t = Pokemon (basename <> form)
+getPokemonFromImageTag t = Pokemon (T.strip $ basename <> form)
   where
     basenameRaw = T.decodeUtf8 $ fromAttrib "alt" t
     basename = case T.unsnoc basenameRaw of

@@ -7,6 +7,7 @@ module Types
 
 import           Data.ByteString                ( ByteString )
 import           Data.Text                      ( Text )
+import           Prettyprinter                  ( Pretty(..) )
 import           Text.HTML.TagSoup              ( Tag )
 
 
@@ -19,12 +20,11 @@ data EggMove = EggMove
   ,  -- parents which learn through breeding
     tags         :: [Tag ByteString] -- debug
   }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Ord)
 
 
-newtype Pokemon = Pokemon Text deriving (Eq, Ord, Show)
+newtype Pokemon = Pokemon Text deriving (Eq, Ord, Show, Pretty)
+
 
 unPokemon :: Pokemon -> Text
 unPokemon (Pokemon t) = t
-
-
